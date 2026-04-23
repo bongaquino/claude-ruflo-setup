@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-04-23T06:02:46.906Z",
+  "projectRoot": "/Users/hitthebong/Documents/Local_Repo/claude-ruflo-setup",
+  "structure": {
+    "hasPackageJson": false,
+    "hasTsConfig": false,
+    "hasClaudeConfig": true,
+    "hasClaudeFlow": true
+  },
+  "scannedAt": 1776924166907
+}
