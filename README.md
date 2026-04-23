@@ -1,0 +1,255 @@
+# 🌊 Ruflo — Claude AI Agent Swarm Setup
+
+A fully configured [Ruflo (Claude-Flow v3)](https://github.com/ruvnet/ruflo) multi-agent swarm environment for macOS, running 98 specialized AI agents in a hierarchical swarm coordinated through Claude Code.
+
+---
+
+## What is Ruflo?
+
+Ruflo is the leading agent orchestration platform for Claude. It transforms Claude Code into a powerful multi-agent development platform, enabling teams to deploy, coordinate, and optimize specialized AI agents working together on complex tasks.
+
+**Key highlights:**
+- 98 specialized AI agents (coder, tester, reviewer, architect, etc.)
+- Hierarchical queen/worker swarm topology
+- Shared memory across all agents (SQLite + HNSW vector search)
+- Intelligent routing — routes simple tasks to cheaper models, saving ~75% on API costs
+- Native Claude Code integration via MCP
+
+---
+
+## Prerequisites
+
+| Tool | Version | Notes |
+|------|---------|-------|
+| macOS | Any recent | Apple Silicon (arm64) supported |
+| Node.js | v20.x LTS | v22 has native module issues with some deps |
+| npm | v10+ | Comes with Node |
+| Claude Code CLI | v2.1+ | Required |
+| Anthropic API Key | — | From [console.anthropic.com](https://console.anthropic.com/keys) |
+| Git | Any | Apple Git works fine |
+
+---
+
+## Setup Steps
+
+### 1. Install nvm and Node.js v20
+
+Node v22 has a native module incompatibility with some Ruflo dependencies (`@fails-components/webtransport`). Use Node v20 LTS instead.
+
+```bash
+# Install nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+
+# Activate nvm in current session
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# Make permanent
+echo 'export NVM_DIR="$HOME/.nvm"' >> ~/.zshrc
+echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> ~/.zshrc
+source ~/.zshrc
+
+# Install and use Node 20
+nvm install 20
+nvm use 20
+nvm alias default 20
+node --version  # should print v20.x.x
+```
+
+### 2. Install Claude Code CLI
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+### 3. Create your project folder and initialize Ruflo
+
+```bash
+mkdir claude-ruflo-setup
+cd claude-ruflo-setup
+npx claude-flow@v3alpha init --wizard
+```
+
+This creates:
+- 12 directories, 117 files
+- 98 agent definitions in `.claude/agents/`
+- 29 skills in `.claude/skills/`
+- 10 slash commands in `.claude/commands/`
+- MCP config in `.mcp.json`
+- V3 runtime config in `.claude-flow/`
+
+### 4. Start the MCP server
+
+```bash
+npx claude-flow@v3alpha mcp start
+```
+
+This connects Ruflo's 27 tools to Claude Code via the MCP protocol.
+
+### 5. Start the background daemon
+
+```bash
+npx claude-flow@v3alpha daemon start
+```
+
+Runs background workers for memory consolidation, optimization, and agent coordination.
+
+### 6. Install agentic-flow (optional — improves embeddings & routing)
+
+```bash
+npm install agentic-flow@latest
+```
+
+> **Note:** You may see a `pipenet` engine warning on Node 20 — this is harmless. Ruflo will use fallbacks if needed.
+
+### 7. Install global packages
+
+```bash
+npm install -g ruflo
+npm install -g @anthropic-ai/claude-code
+```
+
+### 8. Set your Anthropic API key
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-your-key-here
+echo 'export ANTHROPIC_API_KEY=sk-ant-your-key-here' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### 9. Initialize git, memory, and swarm
+
+```bash
+# Git
+git init
+git add .
+git commit -m "Initial Ruflo setup"
+
+# Memory database
+npx claude-flow@v3alpha memory init
+
+# Swarm (select "Hierarchical" when prompted)
+npx claude-flow@v3alpha swarm init
+```
+
+### 10. Run health check
+
+```bash
+npx claude-flow@v3alpha doctor
+```
+
+Expected output: 10 passed, warnings only for optional items.
+
+### 11. Launch Claude Code with Ruflo active
+
+```bash
+claude
+```
+
+---
+
+## Usage
+
+Once inside Claude Code, use these commands:
+
+```bash
+# Dispatch a task to the full swarm
+/swarm "Create a REST API with authentication"
+
+# Spawn specific agent types
+/agent spawn coder
+/agent spawn tester
+/agent spawn reviewer
+
+# List active agents
+/agent list
+```
+
+### From the terminal (outside Claude Code):
+
+```bash
+# Search agent memory
+npx claude-flow@v3alpha memory search "authentication patterns"
+
+# Check daemon status
+npx claude-flow@v3alpha daemon status
+
+# Stop daemon
+npx claude-flow@v3alpha daemon stop
+
+# View logs
+tail -f .claude-flow/daemon.log
+```
+
+---
+
+## Swarm Topology
+
+This setup uses **Hierarchical** topology:
+
+```
+Queen Agent (coordinator)
+├── Coder Agents
+├── Tester Agents
+├── Reviewer Agents
+├── Architect Agents
+└── ... (up to 15 concurrent agents)
+```
+
+Agents share memory, divide work automatically, and learn from each task.
+
+---
+
+## Project Structure
+
+```
+claude-ruflo-setup/
+├── .claude/
+│   ├── agents/          # 98 agent definitions
+│   ├── commands/        # 10 slash commands
+│   ├── skills/          # 29 skills
+│   ├── helpers/
+│   └── settings.json    # Hook configurations
+├── .claude-flow/
+│   ├── config.yaml      # V3 runtime config
+│   ├── data/
+│   ├── logs/
+│   └── sessions/
+├── .swarm/
+│   └── memory.db        # Shared agent memory (SQLite)
+├── .mcp.json            # MCP server config
+└── CLAUDE.md            # Swarm guidance for Claude Code
+```
+
+---
+
+## Troubleshooting
+
+| Issue | Fix |
+|-------|-----|
+| `nvm: command not found` | Run the `export NVM_DIR` line and restart terminal |
+| `SyntaxError: assert { type: 'json' }` | You're on Node 22 — switch to Node 20 via nvm |
+| `Database already exists` on memory init | Harmless — DB was already created during `init` |
+| Agents not responding | Check `npx claude-flow@v3alpha doctor` and verify API key is set |
+| MCP not connecting | Restart with `npx claude-flow@v3alpha mcp start` |
+
+---
+
+## Resources
+
+- [Ruflo GitHub](https://github.com/ruvnet/ruflo)
+- [Claude Code Docs](https://docs.anthropic.com/claude-code)
+- [Anthropic Console](https://console.anthropic.com)
+- [nvm GitHub](https://github.com/nvm-sh/nvm)
+
+---
+
+## Comparison with OpenAgents
+
+| | Ruflo | OpenAgents |
+|---|---|---|
+| Focus | Claude Code extension | Decentralized agent networks |
+| Language | Node.js / WASM (Rust) | Python SDK |
+| Architecture | Hierarchical queen/worker swarm | Peer-to-peer protocol-agnostic |
+| Persistence | SQLite + session memory | Persistent workspace with URL |
+| Best for | Solo/team coding workflows | Cross-platform agent ecosystems |
