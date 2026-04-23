@@ -148,38 +148,103 @@ claude
 
 ---
 
-## Usage
+## Daily Usage
 
-Once inside Claude Code, use these commands:
+### Starting Up Each Session
 
 ```bash
-# Dispatch a task to the full swarm
-/swarm "Create a REST API with authentication"
+cd claude-ruflo-setup
 
-# Spawn specific agent types
+# Start MCP server (connects agents to Claude Code)
+npx claude-flow@v3alpha mcp start &
+
+# Start background daemon
+npx claude-flow@v3alpha daemon start
+
+# Launch Claude Code
+claude
+```
+
+---
+
+### 3 Ways to Use Ruflo Inside Claude Code
+
+#### A) Swarm Mode — best for big, multi-step tasks
+Dispatches the full agent team (planner → coder → tester → reviewer) automatically:
+
+```
+/swarm "Build a REST API with JWT authentication and user CRUD"
+/swarm "Refactor this codebase to use TypeScript"
+/swarm "Write tests for all functions in src/"
+/swarm "Find and fix security vulnerabilities in this project"
+```
+
+#### B) Single Agent — best for focused tasks
+
+```
 /agent spawn coder
 /agent spawn tester
 /agent spawn reviewer
-
-# List active agents
+/agent spawn architect
 /agent list
 ```
 
-### From the terminal (outside Claude Code):
+#### C) Just talk to Claude normally
+Ruflo hooks run in the background automatically — even regular Claude Code prompts get routed intelligently to the right agent tier. No special commands needed.
+
+---
+
+### Real-World Example Workflows
+
+**Start a new feature:**
+```
+/swarm "Add a Stripe payment integration with webhook support"
+```
+
+**Code review:**
+```
+/swarm "Review all files in src/ for bugs, security issues, and best practices"
+```
+
+**Generate documentation:**
+```
+/swarm "Write JSDoc comments and a README for every module in this project"
+```
+
+**Debug something specific:**
+```
+/agent spawn tester
+"Find why the login function returns 401 intermittently"
+```
+
+---
+
+### Terminal Commands (outside Claude Code)
 
 ```bash
-# Search agent memory
-npx claude-flow@v3alpha memory search "authentication patterns"
+# Check what agents are doing
+npx claude-flow@v3alpha agent list
 
-# Check daemon status
-npx claude-flow@v3alpha daemon status
+# Search shared agent memory
+npx claude-flow@v3alpha memory search "authentication"
 
-# Stop daemon
-npx claude-flow@v3alpha daemon stop
+# Check system health
+npx claude-flow@v3alpha doctor
 
-# View logs
+# View live logs
 tail -f .claude-flow/daemon.log
+
+# Stop everything
+npx claude-flow@v3alpha daemon stop
 ```
+
+---
+
+### The Golden Rule
+
+> The bigger and more complex the task, the more value Ruflo adds.
+> For simple one-liners, use Claude Code normally.
+> For anything involving **multiple files, steps, or roles** — use `/swarm`.
 
 ---
 
