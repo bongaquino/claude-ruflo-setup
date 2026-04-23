@@ -248,6 +248,120 @@ npx claude-flow@v3alpha daemon stop
 
 ---
 
+## Optimization Guide
+
+### Expected Impact
+| Optimization | Benefit |
+|---|---|
+| Model routing | ~75% reduction in API costs |
+| Memory pre-training | No cold-start lag between sessions |
+| Startup alias | One command to start everything |
+| Git hooks | Automatic code review on every push |
+| Background worker tuning | Prevents quota burn during idle time |
+
+---
+
+### 1. Startup Automation — One Command to Start Everything
+
+Add this alias to `~/.zshrc` so you never have to run 3 commands again:
+
+```bash
+alias ruflo='cd ~/Documents/Local_Repo/claude-ruflo-setup && npx claude-flow@v3alpha mcp start & npx claude-flow@v3alpha daemon start && claude'
+```
+
+Apply it immediately:
+```bash
+source ~/.zshrc
+```
+
+Now just type `ruflo` in any terminal to launch the full stack.
+
+---
+
+### 2. Model Routing — Cut API Costs ~75%
+
+Route simple tasks to the cheaper Haiku model and complex swarm tasks to Sonnet automatically:
+
+```bash
+npx claude-flow@v3alpha config set routing.simple "claude-haiku-4-5-20251001"
+npx claude-flow@v3alpha config set routing.complex "claude-sonnet-4-6"
+```
+
+Simple tasks (file reads, summaries, lookups) go to Haiku. Multi-agent swarm tasks go to Sonnet. You only pay for Opus/Sonnet when you actually need it.
+
+---
+
+### 3. Memory Pre-Training — No Cold-Start Lag
+
+Bootstrap agent memory from your codebase once so agents don't re-learn your project every session:
+
+```bash
+# Run once to learn from your codebase
+npx claude-flow@v3alpha hooks pretrain
+
+# Run after each session to consolidate what agents learned
+npx claude-flow@v3alpha memory consolidate
+```
+
+After pre-training, agents will immediately understand your file structure, patterns, and conventions without being told.
+
+---
+
+### 4. Swarm Topology Per Task Type
+
+Different tasks benefit from different topologies — don't use one-size-fits-all:
+
+```bash
+# Coding tasks → hierarchical (queen coordinates specialists)
+npx claude-flow@v3alpha swarm init --topology hierarchical
+
+# Research / analysis → mesh (agents share findings freely peer-to-peer)
+npx claude-flow@v3alpha swarm init --topology mesh
+
+# Quick single-pass tasks → star (one coordinator, fast spoke agents)
+npx claude-flow@v3alpha swarm init --topology star
+```
+
+| Topology | Best for |
+|---|---|
+| Hierarchical | Coding, building features, refactoring |
+| Mesh | Research, analysis, multi-domain problems |
+| Star | Quick reviews, single-output tasks |
+| Hybrid | Large projects needing both depth and breadth |
+
+---
+
+### 5. Git Auto-Review on Every Push
+
+Have Ruflo automatically review your code before it reaches the remote:
+
+```bash
+# Create the pre-push hook
+echo '#!/bin/sh
+npx claude-flow@v3alpha swarm "Review staged changes for bugs and security issues"' > .git/hooks/pre-push
+
+# Make it executable
+chmod +x .git/hooks/pre-push
+```
+
+Now every `git push` triggers an agent swarm review automatically.
+
+---
+
+### 6. Background Worker Tuning — Prevent Quota Burn
+
+Limit how many tokens background workers consume so they don't eat your API quota while idle:
+
+```bash
+# Cap background token usage per worker run
+npx claude-flow@v3alpha config set workers.maxTokens 5000
+
+# Set how often background workers run (seconds)
+npx claude-flow@v3alpha config set workers.interval 300  # every 5 minutes
+```
+
+---
+
 ## Swarm Topology
 
 This setup uses **Hierarchical** topology:
